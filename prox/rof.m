@@ -7,7 +7,8 @@ function [x, varargout] = rof(f, alpha, alg, varargin)
 %   - via an accelerated forward-backward splitting (FISTA) on the DUAL
 %     problem. Here the initialization 'y0' has to be of the size of
 %     grad(f). If you want to use Huber-ROF, choose epsilon > 0.
-%   - via accelerated primal-dual.
+%   - via accelerated primal-dual. If you want to use Huber-ROF, 
+%     choose epsilon > 0.
 %
 % Input:
 % f          ==   data
@@ -34,6 +35,7 @@ function [x, varargout] = rof(f, alpha, alg, varargin)
 %            ==   'tol'      :  tolerance for 'err'
 %            ==   'int'      :  interval for 'err' and history
 %            ==   'P'        :  function handle: projection onto C
+%            ==   'epsilon'  :  smoothing parameter for Huber-ROF
 %            ==   'verbose'  :  output (yes == 'true' / no == 'false')
 
 % Some parameters
@@ -209,25 +211,40 @@ switch alg
         end
         
         % Step sizes
-        tau   = 0.99/sqrt(8);
-        sigma = 0.99/sqrt(8);
-        gamma = 1; % strong convexity
-        theta = 1;
+        if ( epsilon == 0 )
+            tau   = 0.99/sqrt(4*numel(size(f)));
+            sigma = 0.99/sqrt(4*numel(size(f)));
+            gamma = 1; % strong convexity
+            theta = 1;
+        else
+            L     = sqrt(4*numel(size(f)));
+            gamma = 1; 
+            mu    = 2*sqrt(gamma*epsilon/alpha) / L;
+            tau   = mu / (2 * gamma);
+            sigma = mu / (2 * epsilon/alpha);
+            theta = 1 / (1 + mu);
+        end
         
         
         it = 1;
         gap = 1;
         % Do the work
         while ( it < niter && stop_tol > tol )
-            y = prox_dual_l1(y + sigma * grad(x + theta * (x - x_old)), alpha, norm_type);
+            y = prox_dual_l1((y + sigma * grad(x + theta * (x - x_old))) / (1+sigma*epsilon/alpha), alpha, norm_type);
             x_old = x;
             x = P(1/(1+tau) * (x - tau * (-div(y)) + tau * f));
             
             % Check primal-dual gap
             if ( mod(it,int) == 0 )
-                p   = 0.5 * norm(vec(x-f))^2 + alpha * tv(x,norm_type);
-                d   = - 0.5 * norm(vec(div(y)))^2 - sum(vec(div(y).* f));
-                gap = abs(p-d);
+                if ( epsilon > 0 )
+                    p   = 0.5 * norm(vec(x-f))^2 + alpha * tv(x,norm_type,epsilon);
+                    d   = - 0.5 * norm(vec(div(y)))^2 - sum(vec(div(y).* f)) - epsilon / (2*alpha) * norm(vec(y))^2;
+                    gap = abs(p-d);
+                else
+                    p   = 0.5 * norm(vec(x-f))^2 + alpha * tv(x,norm_type);
+                    d   = - 0.5 * norm(vec(div(y)))^2 - sum(vec(div(y).* f));
+                    gap = abs(p-d);
+                end
                 
                 if (verbose && strcmp('rmse',err) == 1)
                     fprintf('It: %6.6d. RMSE.: %6.6d.\n',it,sqrt(2*gap/px));
@@ -250,9 +267,11 @@ switch alg
             end
             
             % Acceleration
-            theta = 1/sqrt(1+2*gamma*tau);
-            tau   = tau * theta;
-            sigma = sigma / theta;
+            if ( epsilon == 0 )
+                theta = 1/sqrt(1+2*gamma*tau);
+                tau   = tau * theta;
+                sigma = sigma / theta;
+            end
             
             it    = it + 1;
         end
