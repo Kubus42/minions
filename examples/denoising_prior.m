@@ -90,5 +90,22 @@ imagesc(shrinkImage(u_shift, 0, 10)); colormap gray; axis image; title('with pri
 figure;
 imagesc(diffImage(u_shift, uc, [0, 10]) + 0.5); colormap(cmap); axis image; title('diff. to ground truth'); 
 
+%% Try a rotation 
+gamma = 2; % angle for rotation
+vc_rot = imrotate(vc, gamma, 'bilinear', 'crop');
+
+eta = 0.05;
+grad_vc_rot = gradient_direction(vc_rot, eta);
+[vc_rof_rot, ~, q_rot] = rof(vc_rot, beta, 'fista', 'niter', 20000, 'verbose', 1, 'tol', 1e-6, 'norm_type', norm_type, 'epsilon', 0.001);
+subgrad_vc_rot = q_rot/beta;
+
+niter = 5000;
+[u_rot, hist_u_rot] = prox_icbtv_tv(un, subgrad_vc_rot, alpha, w, 'niter', niter); 
+
+figure; 
+imagesc(shrinkImage(abs(u_rot), 0, 10)); colormap gray; axis image; title('with prior');
+
+figure; 
+imagesc(diffImage(abs(u_rot), uc, [0, 10]) + 0.5); colormap(cmap); axis image; title('diff. to ground truth');
 
 
