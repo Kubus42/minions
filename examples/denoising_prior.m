@@ -25,7 +25,7 @@ grad_vc = gradient_direction(vc,eta);
 
 % compute a subgradient 
 beta = 0.01;
-[vc_rof, ~, q] = rof(vc, beta, 'fista', 'niter', 20000, 'verbose', 1, 'tol', 1e-5, 'norm_type', norm_type, 'epsilon', 0.01);
+[vc_rof, ~, q] = rof(vc, beta, 'fista', 'niter', 20000, 'verbose', 1, 'tol', 1e-5, 'norm_type', norm_type, 'epsilon', 0.0001);
 subgrad_vc = q/beta;
 
 %% Do the denoising with dTV

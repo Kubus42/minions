@@ -46,7 +46,7 @@ p = -div(gradx);
 
 % Check the result
 % "Edges"
-figure; imagesc(sqrt(abs(gradx(:,:,1)).^2 + abs(gradx(:,:,2)).^2)); colorbar;
+% figure; imagesc(sqrt(abs(gradx(:,:,1)).^2 + abs(gradx(:,:,2)).^2)); colorbar;
 % "Subgradient"
 % figure; imagesc(abs(p)); colorbar; 
 

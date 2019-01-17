@@ -1,0 +1,38 @@
+% some denoising with Bregman-ROF
+
+% load an image 
+f = im2double(imread('Giraffe_bw.png'));
+sz = size(f);
+
+% add some noise 
+sigma = 0.05; 
+f_noisy = f + sigma * randn(sz);
+
+% show 
+figure; 
+subplot(121); 
+imagesc(f); axis image; title('original');
+subplot(122);
+imagesc(shrinkImage(f_noisy,0,1)); axis image; title('noisy');
+colormap gray; 
+
+%% 
+alpha = 2;
+niter = 1000; 
+int = 10; 
+niter_breg = 10;
+
+% subgradient
+p = zeros(sz);
+
+figure; 
+for i = 1:niter_breg
+    [u, hist_u] = rof(f + alpha*p, alpha, 'fista', 'niter', niter, 'int', int);
+    [v, hist_v] 
+    p = (f-u)/alpha;
+    subplot(121); imagesc(u); axis image; 
+    subplot(122); imagesc(p); axis image;
+    colormap gray; 
+end
+
+
